@@ -1,74 +1,6 @@
-import { Detail, Form, ActionPanel, Action, showToast, Toast, popToRoot, Cache, confirmAlert, Alert } from "@raycast/api";
-import { runAppleScript } from "run-applescript";
+import { Form, ActionPanel, Action, showToast, Toast, popToRoot } from "@raycast/api";
 import { useState, useEffect } from "react";
-
-const cache = new Cache();
-const CACHE_KEY = "contacts_cache";
-const CACHE_TTL = 1000 * 60 * 60 * 24; // 1 day
-
-interface Contact {
-  name: string;
-  handle: string;
-}
-
-interface CachedContacts {
-  timestamp: number;
-  contacts: Contact[];
-}
-
-async function getContacts(): Promise<Contact[]> {
-  // Return cached contacts if still fresh
-  const cached = cache.get(CACHE_KEY);
-  if (cached) {
-    const parsed: CachedContacts = JSON.parse(cached);
-    if (Date.now() - parsed.timestamp < CACHE_TTL) {
-      return parsed.contacts;
-    }
-  }
-
-
-  const result = await runAppleScript(`
-    tell application "Contacts"
-      set allPeople to every person
-      set output to {}
-      set peopleCount to count of allPeople
-      
-      repeat with i from 1 to peopleCount
-        set p to item i of allPeople
-        set personName to name of p
-        
-        if personName is not "SPAM" then
-          repeat with ph in (phone of p)
-            set end of output to (personName & "|" & (value of ph))
-          end repeat
-        end if
-      end repeat
-      
-      set AppleScript's text item delimiters to "@@@"
-      set outputText to output as text
-      set AppleScript's text item delimiters to ""
-      return outputText
-    end tell
-  `);
-
-  if (!result) throw new Error("No contacts returned");
-
-  const contacts = result
-    .split("@@@")
-    .filter(Boolean)
-    .map((line) => {
-      const [name, handle] = line.split("|");
-      return { name, handle };
-    })
-    .sort((a, b) => a.name.localeCompare(b.name));
-
-  // Store in cache with current timestamp
-  const payload: CachedContacts = { timestamp: Date.now(), contacts };
-  cache.set(CACHE_KEY, JSON.stringify(payload));
-
-  return contacts;
-}
-
+import { getContacts, Contact, sendMessage, refreshCache } from "./utils";
 
 export default function Command() {
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -88,7 +20,7 @@ export default function Command() {
         <Action
           title="Refresh Contacts"
           onAction={() => {
-            cache.remove(CACHE_KEY);
+            refreshCache();
             setIsLoading(true);
             getContacts().then(setContacts).finally(() => setIsLoading(false));
           }}
@@ -110,34 +42,8 @@ export default function Command() {
   );
 }
 
-function escapeAppleScript(str: string): string {
-  return str.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-}
-
 async function handleSubmit(values: { message: string, recipient: string }) {
-  const { message, recipient } = values;
-  const appleScript = `
-    tell application "Messages"
-      set targetService to 1st service whose service type = iMessage
-      set targetBuddy to buddy "${escapeAppleScript(recipient)}" of targetService
-      send "${escapeAppleScript(message)}" to targetBuddy
-    end tell
-  `;
-
-  if (!message.trim()) {
-    await showToast({ style: Toast.Style.Failure, title: "Message cannot be empty" });
-    return;
-  }
-
-  const confirmed = await confirmAlert({
-    title: "Send Message?",
-    message: `Send to ${values.recipient}?`,
-    primaryAction: { title: "Send", style: Alert.ActionStyle.Default },
-  });
-  if (!confirmed) return;
-
-  const result = await runAppleScript(appleScript);
-  await showToast({ style: Toast.Style.Success, title: `Result: ${result}` });
+  sendMessage(values.message, values.recipient);
+  await showToast({ style: Toast.Style.Success, title: "Message sent successfully" });
   await popToRoot()
-
-}
+};
