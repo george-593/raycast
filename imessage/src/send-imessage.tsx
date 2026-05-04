@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 
 const cache = new Cache();
 const CACHE_KEY = "contacts_cache";
-const CACHE_TTL = 1000 * 60 * 60; // 1 hour
+const CACHE_TTL = 1000 * 60 * 60 * 24; // 1 day
 
 interface Contact {
   name: string;
