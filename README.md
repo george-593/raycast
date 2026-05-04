@@ -25,3 +25,4 @@ npm run build
 ### To-Do List
 - Preferences
 - Read messages in AI chat
+- Allow to send multiple messages at once to different people
