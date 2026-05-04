@@ -1,0 +1,29 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+build/
+
+# Raycast / app caches
+.raycast/
+*.log
+
+# environment files
+.env
+.env.*
+!.env.example
+
+# TypeScript
+*.tsbuildinfo
+
+# macOS
+.DS_Store
+
+# editor
+.vscode/
+.idea/
+
+# test / coverage
+coverage/
+
