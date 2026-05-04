@@ -41,10 +41,6 @@ async function getContacts(): Promise<Contact[]> {
           repeat with ph in (phone of p)
             set end of output to (personName & "|" & (value of ph))
           end repeat
-          
-          repeat with em in (email of p)
-            set end of output to (personName & "|" & (value of em))
-          end repeat
         end if
       end repeat
       
