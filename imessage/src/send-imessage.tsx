@@ -128,12 +128,18 @@ async function handleSubmit(values: { message: string, recipient: string }) {
     end tell
   `;
 
+  if (!message.trim()) {
+    await showToast({ style: Toast.Style.Failure, title: "Message cannot be empty" });
+    return;
+  }
+
   const confirmed = await confirmAlert({
     title: "Send Message?",
     message: `Send to ${values.recipient}?`,
     primaryAction: { title: "Send", style: Alert.ActionStyle.Default },
   });
   if (!confirmed) return;
+
   const result = await runAppleScript(appleScript);
   await showToast({ style: Toast.Style.Success, title: `Result: ${result}` });
   await popToRoot()
