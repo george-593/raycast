@@ -1,4 +1,4 @@
-import { Detail, Form, ActionPanel, Action, showToast, Toast, popToRoot, Cache } from "@raycast/api";
+import { Detail, Form, ActionPanel, Action, showToast, Toast, popToRoot, Cache, confirmAlert, Alert } from "@raycast/api";
 import { runAppleScript } from "run-applescript";
 import { useState, useEffect } from "react";
 
@@ -63,7 +63,8 @@ async function getContacts(): Promise<Contact[]> {
     .map((line) => {
       const [name, handle] = line.split("|");
       return { name, handle };
-    });
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   // Store in cache with current timestamp
   const payload: CachedContacts = { timestamp: Date.now(), contacts };
@@ -127,8 +128,12 @@ async function handleSubmit(values: { message: string, recipient: string }) {
     end tell
   `;
 
-  await showToast({ style: Toast.Style.Animated, title: "Sending..." });
-
+  const confirmed = await confirmAlert({
+    title: "Send Message?",
+    message: `Send to ${values.recipient}?`,
+    primaryAction: { title: "Send", style: Alert.ActionStyle.Default },
+  });
+  if (!confirmed) return;
   const result = await runAppleScript(appleScript);
   await showToast({ style: Toast.Style.Success, title: `Result: ${result}` });
   await popToRoot()
